@@ -1,0 +1,272 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+
+:root {
+    --gold: #F0B84D;
+    --gold-light: #FFD57E;
+    --gold-dark: #C6912E;
+    --bg-main: #0B0F19;
+    --bg-card: #131A2A;
+    --border-soft: #232D42;
+    --text-main: #EAEEF7;
+    --text-muted: #8895AD;
+}
+
+/* Fond principal sombre en dégradé */
+html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stAppViewBlockContainer"], [data-testid="stMain"] {
+    background: radial-gradient(circle at top left, #121a2b 0%, #0B0F19 55%, #090c14 100%) !important;
+    color: var(--text-main) !important;
+    font-family: 'Inter', sans-serif !important;
+}
+
+[data-testid="stHeader"] { background: transparent !important; }
+
+/* Bouton pour rouvrir la sidebar (flèche >>) */
+[data-testid="collapsedControl"] {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--gold) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 12px rgba(240, 184, 77, 0.35) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: scale(1.6) !important;
+    margin: 10px !important;
+}
+
+[data-testid="collapsedControl"] svg {
+    fill: var(--gold) !important;
+    color: var(--gold) !important;
+}
+
+[data-testid="collapsedControl"] button {
+    background: transparent !important;
+}
+
+/* Bouton pour fermer la sidebar (flèche <<) quand elle est ouverte */
+[data-testid="stSidebarCollapseButton"] {
+    transform: scale(1.6) !important;
+    margin: 10px !important;
+}
+
+[data-testid="stSidebarCollapseButton"] button {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--gold) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 2px 12px rgba(240, 184, 77, 0.35) !important;
+}
+
+[data-testid="stSidebarCollapseButton"] svg {
+    fill: var(--gold) !important;
+    color: var(--gold) !important;
+}
+
+/* Titres en dégradé doré */
+h1, h2 {
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%) !important;
+    -webkit-background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+    background-clip: text !important;
+    font-weight: 800 !important;
+    letter-spacing: -0.5px;
+}
+
+h3, h4 {
+    color: var(--text-main) !important;
+    font-weight: 700 !important;
+}
+
+/* Cartes en glassmorphism + glow doré au survol */
+div[data-testid="stContainer"], div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: linear-gradient(145deg, var(--bg-card) 0%, #0F1524 100%) !important;
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 18px !important;
+    padding: 24px !important;
+    box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(10px);
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
+}
+
+div[data-testid="stContainer"]:hover, div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    transform: translateY(-4px) !important;
+    box-shadow: 0 16px 40px -12px rgba(240, 184, 77, 0.25), 0 0 0 1px rgba(240, 184, 77, 0.3) !important;
+    border-color: var(--gold) !important;
+}
+
+/* Sidebar sombre */
+[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0D1220 0%, #090C14 100%) !important;
+    border-right: 1px solid var(--border-soft) !important;
+}
+
+[data-testid="stSidebar"] * { color: var(--text-main) !important; }
+
+/* Inputs (tous les niveaux imbriqués) */
+div[data-baseweb="input"],
+div[data-baseweb="base-input"],
+div[data-baseweb="input"] > div,
+div[data-baseweb="select"] > div,
+div[data-baseweb="select"] div,
+div[data-baseweb="textarea"],
+div[data-testid="stTextInput"] div,
+div[data-testid="stTextArea"] div,
+div[data-testid="stNumberInput"] div,
+textarea, input {
+    background-color: #0F1524 !important;
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+div[data-baseweb="input"], div[data-baseweb="select"] > div, div[data-baseweb="textarea"] {
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 10px !important;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+}
+
+/* Empêche le navigateur d'imposer un fond blanc (autofill / saisie) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:focus {
+    -webkit-box-shadow: 0 0 0px 1000px #0F1524 inset !important;
+    box-shadow: 0 0 0px 1000px #0F1524 inset !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+    caret-color: var(--text-main) !important;
+    transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
+}
+
+div[data-baseweb="input"]:focus-within, div[data-baseweb="select"] > div:focus-within, div[data-baseweb="textarea"]:focus-within {
+    border-color: var(--gold) !important;
+    box-shadow: 0 0 0 3px rgba(240, 184, 77, 0.15) !important;
+}
+
+/* Radio menu sidebar */
+div[data-testid="stRadio"] label {
+    background-color: #0F1524 !important;
+    border: 1px solid var(--border-soft) !important;
+    padding: 10px 15px !important;
+    border-radius: 10px !important;
+    margin-bottom: 8px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+}
+
+div[data-testid="stRadio"] label:hover {
+    border-color: var(--gold) !important;
+    background-color: #171F33 !important;
+}
+
+/* Boutons dorés avec effet glow (formulaires + boutons normaux, PAS le bouton icône œil) */
+div.stButton > button, div[data-testid="stFormSubmitButton"] button, div[data-testid="stDownloadButton"] button {
+    background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 55%, var(--gold-dark) 100%) !important;
+    color: #0B0F19 !important;
+    font-weight: 800 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 11px 20px !important;
+    width: 100% !important;
+    box-shadow: 0 4px 16px rgba(240, 184, 77, 0.35) !important;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+}
+
+div.stButton > button:hover, div[data-testid="stFormSubmitButton"] button:hover, div[data-testid="stDownloadButton"] button:hover {
+    transform: translateY(-2px) scale(1.01) !important;
+    box-shadow: 0 8px 28px rgba(240, 184, 77, 0.5) !important;
+    filter: brightness(1.08) !important;
+}
+
+div.stButton > button:active { transform: translateY(0) scale(0.99) !important; }
+
+/* Bouton icône œil (afficher/cacher mot de passe) - reste discret */
+div[data-baseweb="input"] button {
+    background: transparent !important;
+    width: auto !important;
+    box-shadow: none !important;
+    padding: 4px !important;
+}
+
+div[data-baseweb="input"] button svg {
+    fill: var(--text-muted) !important;
+}
+
+/* Labels des champs bien visibles */
+[data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label, [data-testid="stWidgetLabel"] {
+    color: var(--text-main) !important;
+    font-weight: 600 !important;
+    opacity: 1 !important;
+}
+
+input::placeholder, textarea::placeholder {
+    color: var(--text-muted) !important;
+    opacity: 1 !important;
+}
+
+input, textarea, div[data-baseweb="select"] span {
+    color: var(--text-main) !important;
+    -webkit-text-fill-color: var(--text-main) !important;
+}
+
+/* Barre de décoration animée */
+[data-testid="stDecoration"] {
+    background: linear-gradient(90deg, var(--gold-dark), var(--gold-light), var(--gold-dark)) !important;
+    background-size: 200% auto !important;
+    animation: shimmer 3s linear infinite;
+}
+
+@keyframes shimmer {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+}
+
+/* Tableaux */
+[data-testid="stDataFrame"] {
+    border: 1px solid var(--border-soft) !important;
+    border-radius: 12px !important;
+    overflow: hidden;
+}
+
+/* Alertes */
+div[data-testid="stAlert"] {
+    border-radius: 12px !important;
+    border: 1px solid var(--border-soft) !important;
+    backdrop-filter: blur(6px);
+}
+
+/* Scrollbar dorée */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #0B0F19; }
+::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+
+hr { border-color: var(--border-soft) !important; }
+
+/* Responsive Mobile : empêche le débordement horizontal */
+html, body { overflow-x: hidden !important; }
+
+[data-testid="stAppViewContainer"], [data-testid="stMain"], .main, section.main {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+}
+
+@media (max-width: 768px) {
+    .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+        max-width: 100vw !important;
+    }
+
+    h1 { font-size: 1.6rem !important; }
+    h2 { font-size: 1.3rem !important; }
+    h3, h4 { font-size: 1.05rem !important; }
+
+    div[data-testid="stContainer"], div[data-testid="stVerticalBlockBorderWrapper"] {
+        padding: 14px !important;
+    }
+
+    div[data-testid="column"] {
+        width: 100% !important;
+        flex: 1 1 100% !important;
+        min-width: 100% !important;
+    }
+}
