@@ -498,59 +498,6 @@ def commercial_page(current_menu):
         main_col1, main_col2 = st.columns([2, 1])
 
         with main_col1:
-            st.markdown(
-                "<p style='font-size:13px; color:var(--text-secondary); font-weight:600; margin-bottom:6px;'>"
-                "📍 Cliquez sur la carte pour choisir l'adresse exacte du client, puis copiez le lien généré "
-                "dans le champ « Lien Google Maps » ci-dessous.</p>",
-                unsafe_allow_html=True
-            )
-            components.html(
-                """
-                <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-                <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-                <div id="nearya-map" style="height: 260px; border-radius: 10px; border: 1px solid #E2DDCD;"></div>
-                <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
-                    <input id="mapsLinkOutput" readonly
-                        style="flex:1; padding:9px 10px; border-radius:6px; border:1px solid #E2DDCD;
-                               font-family: 'JetBrains Mono', monospace; font-size:12px; color:#1E251F; background:#F5F3EC;"
-                        placeholder="Le lien apparaîtra ici après un clic sur la carte..." />
-                    <button id="copyBtn"
-                        style="padding:9px 16px; border-radius:6px; border:none; background:#C77A2B;
-                               color:white; font-weight:600; cursor:pointer; font-family:sans-serif; font-size:13px;">
-                        Copier
-                    </button>
-                </div>
-                <script>
-                    var map = L.map('nearya-map').setView([33.5731, -7.5898], 12);
-                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                        attribution: '&copy; OpenStreetMap contributors',
-                        maxZoom: 19
-                    }).addTo(map);
-                    var marker;
-                    map.on('click', function(e) {
-                        var lat = e.latlng.lat.toFixed(6);
-                        var lng = e.latlng.lng.toFixed(6);
-                        if (marker) { map.removeLayer(marker); }
-                        marker = L.marker([lat, lng]).addTo(map);
-                        document.getElementById('mapsLinkOutput').value =
-                            "https://www.google.com/maps?q=" + lat + "," + lng;
-                    });
-                    document.getElementById('copyBtn').addEventListener('click', function() {
-                        var input = document.getElementById('mapsLinkOutput');
-                        if (!input.value) { return; }
-                        input.select();
-                        input.setSelectionRange(0, 99999);
-                        navigator.clipboard.writeText(input.value).catch(function() {
-                            document.execCommand('copy');
-                        });
-                    });
-                </script>
-                """,
-                height=340,
-            )
-
-            maps_link = st.text_input("Lien Google Maps (Optionnel)", placeholder="Collez ici le lien copié depuis la carte ci-dessus")
-
             with st.form("manual_order_form"):
                 st.markdown(
                     "<div style='display:flex; align-items:center; gap:10px; margin-bottom:14px;'>"
@@ -567,6 +514,59 @@ def commercial_page(current_menu):
                     phone = st.text_input("Téléphone du Client *")
 
                 zone = st.selectbox("Zone de livraison *", ["Casablanca - Centre", "Casablanca - Oulfa", "Casablanca - Ain Sebaa", "Rabat", "Marrakech"])
+
+                st.markdown(
+                    "<p style='font-size:13px; color:var(--text-secondary); font-weight:600; margin:14px 0 6px 0;'>"
+                    "📍 Cliquez sur la carte pour choisir l'adresse exacte du client, puis copiez le lien généré "
+                    "dans le champ « Lien Google Maps » ci-dessous.</p>",
+                    unsafe_allow_html=True
+                )
+                components.html(
+                    """
+                    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+                    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+                    <div id="nearya-map" style="height: 260px; border-radius: 10px; border: 1px solid #E2DDCD;"></div>
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:8px;">
+                        <input id="mapsLinkOutput" readonly
+                            style="flex:1; padding:9px 10px; border-radius:6px; border:1px solid #E2DDCD;
+                                   font-family: 'JetBrains Mono', monospace; font-size:12px; color:#1E251F; background:#F5F3EC;"
+                            placeholder="Le lien apparaîtra ici après un clic sur la carte..." />
+                        <button id="copyBtn"
+                            style="padding:9px 16px; border-radius:6px; border:none; background:#C77A2B;
+                                   color:white; font-weight:600; cursor:pointer; font-family:sans-serif; font-size:13px;">
+                            Copier
+                        </button>
+                    </div>
+                    <script>
+                        var map = L.map('nearya-map').setView([33.5731, -7.5898], 12);
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; OpenStreetMap contributors',
+                            maxZoom: 19
+                        }).addTo(map);
+                        var marker;
+                        map.on('click', function(e) {
+                            var lat = e.latlng.lat.toFixed(6);
+                            var lng = e.latlng.lng.toFixed(6);
+                            if (marker) { map.removeLayer(marker); }
+                            marker = L.marker([lat, lng]).addTo(map);
+                            document.getElementById('mapsLinkOutput').value =
+                                "https://www.google.com/maps?q=" + lat + "," + lng;
+                        });
+                        document.getElementById('copyBtn').addEventListener('click', function() {
+                            var input = document.getElementById('mapsLinkOutput');
+                            if (!input.value) { return; }
+                            input.select();
+                            input.setSelectionRange(0, 99999);
+                            navigator.clipboard.writeText(input.value).catch(function() {
+                                document.execCommand('copy');
+                            });
+                        });
+                    </script>
+                    """,
+                    height=340,
+                )
+
+                maps_link = st.text_input("Lien Google Maps (Optionnel)", placeholder="Collez ici le lien copié depuis la carte ci-dessus")
                 address = st.text_input("Adresse de Livraison exacte *")
 
                 st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
