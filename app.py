@@ -273,50 +273,16 @@ st.markdown("""
        Avant, la règle visait [data-testid="stForm"] en général, ce qui rétrécissait
        aussi le formulaire de commande (Ajouter Commande) en une petite carte de 400px.
 
-       Signature de la marque : un sceau postal qui chevauche le haut de la carte,
-       et une ligne perforée en pointillés — le détail d'un bordereau d'expédition
-       qu'on détache. C'est la seule audace visuelle de la page ; tout le reste
-       reste sobre. ---------- */
+       Le nom "NearYa Express" vit maintenant à un seul endroit : en haut de cette
+       carte (plus de titre dupliqué en haut de la page, plus de sceau séparé). ---------- */
     .st-key-login_card {
-        position: relative;
         background: var(--bg-surface) !important;
         border: 1px solid var(--border) !important;
         border-radius: var(--radius) !important;
-        padding: 44px 36px 36px 36px !important;
-        max-width: 400px !important;
-        margin: 44px auto 0 auto !important;
+        padding: 40px 36px 36px 36px !important;
+        max-width: 420px !important;
+        margin: 60px auto 0 auto !important;
         box-shadow: 0 20px 40px -24px rgba(26, 31, 41, 0.18) !important;
-    }
-
-    .st-key-login_card::before {
-        content: "N";
-        position: absolute;
-        top: -26px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: 52px;
-        height: 52px;
-        border-radius: 50%;
-        background: var(--accent);
-        color: #FFFFFF;
-        font-family: var(--font-display);
-        font-weight: 600;
-        font-size: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-shadow: 0 6px 16px -4px rgba(199, 122, 43, 0.5), 0 0 0 4px var(--bg-page);
-        z-index: 2;
-    }
-
-    .st-key-login_card::after {
-        content: "";
-        position: absolute;
-        top: 30px;
-        left: 24px;
-        right: 24px;
-        height: 0;
-        border-top: 2px dashed var(--border-strong);
     }
 
     .st-key-login_card [data-testid="stForm"] {
@@ -817,20 +783,18 @@ def admin_page(current_menu):
 # 4. MAIN ROUTING & SUPER SIDEBAR FILLING
 # ==========================================
 if not st.session_state["logged_in"]:
-    st.markdown("<div style='height: 60px'></div>", unsafe_allow_html=True)
-
-    if os.path.exists(LOGO_FILE):
-        st.image(LOGO_FILE, width=160)
-    else:
-        st.markdown(
-            "<h1 style='text-align: center !important; color: var(--text-primary) !important; border-bottom: none !important; padding-bottom: 0 !important; margin-bottom: 4px !important; font-size: 2.4rem !important; letter-spacing: -0.5px !important;'>"
-            "NearYa <span style='color: var(--accent);'>Express</span></h1>",
-            unsafe_allow_html=True
-        )
-
-    st.markdown("<div style='height: 28px'></div>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 70px'></div>", unsafe_allow_html=True)
 
     with st.container(key="login_card"):
+        if os.path.exists(LOGO_FILE):
+            st.image(LOGO_FILE, width=120)
+        else:
+            st.markdown(
+                "<h1 style='text-align: center !important; color: var(--text-primary) !important; border-bottom: none !important; padding-bottom: 0 !important; margin-bottom: 20px !important; font-size: 1.9rem !important; letter-spacing: -0.4px !important;'>"
+                "NearYa <span style='color: var(--accent);'>Express</span></h1>",
+                unsafe_allow_html=True
+            )
+
         with st.form("login_form"):
             username_input = st.text_input("Nom d'utilisateur")
             password_input = st.text_input("Mot de passe", type="password")
