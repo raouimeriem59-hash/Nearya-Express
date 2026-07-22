@@ -549,6 +549,8 @@ def commercial_page(current_menu):
                 height=340,
             )
 
+            maps_link = st.text_input("Lien Google Maps (Optionnel)", placeholder="Collez ici le lien copié depuis la carte ci-dessus")
+
             with st.form("manual_order_form"):
                 st.markdown(
                     "<div style='display:flex; align-items:center; gap:10px; margin-bottom:14px;'>"
@@ -566,7 +568,6 @@ def commercial_page(current_menu):
 
                 zone = st.selectbox("Zone de livraison *", ["Casablanca - Centre", "Casablanca - Oulfa", "Casablanca - Ain Sebaa", "Rabat", "Marrakech"])
                 address = st.text_input("Adresse de Livraison exacte *")
-                maps_link = st.text_input("Lien Google Maps (Optionnel)")
 
                 st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
                 st.markdown(
