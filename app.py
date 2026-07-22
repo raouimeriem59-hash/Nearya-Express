@@ -566,8 +566,8 @@ def commercial_page(current_menu):
                     height=340,
                 )
 
-                maps_link = st.text_input("Lien Google Maps (Optionnel)", placeholder="Collez ici le lien copié depuis la carte ci-dessus")
-                address = st.text_input("Adresse de Livraison exacte *")
+                maps_link = st.text_input("Adresse (lien Google Maps)", placeholder="Cliquez sur la carte ci-dessus, puis collez le lien copié ici")
+                address = maps_link
 
                 st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
                 st.markdown(
@@ -610,7 +610,7 @@ def commercial_page(current_menu):
                 notes = st.text_area("Notes pour le livreur")
 
                 if st.form_submit_button("🚀 Valider la Commande"):
-                    if client_name and phone and address:
+                    if client_name and phone:
                         photo_path = ""
                         if uploaded_file is not None:
                             os.makedirs("uploaded_shops", exist_ok=True)
