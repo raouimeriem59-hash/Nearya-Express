@@ -12,132 +12,152 @@ st.set_page_config(page_title="NearYa Express", page_icon="📦", layout="wide",
 
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
+    /* ============================================
+       DESIGN TOKENS — identité "waybill / cachet postal"
+       Un accent ambre (déjà la couleur de marque NearYa), une encre
+       chaude au lieu du noir pur, un papier parcheminé au lieu du
+       blanc froid. Une seule audace : le sceau + la bordure perforée
+       sur la carte de connexion (voir plus bas).
+       ============================================ */
     :root {
-        --gold: #F0B84D;
-        --gold-light: #FFD57E;
-        --gold-dark: #C6912E;
-        --bg-main: #0B0F19;
-        --bg-card: #131A2A;
-        --bg-card-hover: #171F33;
-        --border-soft: #232D42;
-        --text-main: #EAEEF7;
-        --text-muted: #8895AD;
+        --accent: #C77A2B;
+        --accent-soft: rgba(199, 122, 43, 0.10);
+        --accent-border: rgba(199, 122, 43, 0.35);
+
+        --bg-page: #F5F3EC;
+        --bg-surface: #FFFFFF;
+        --bg-surface-raised: #EFEBDF;
+
+        --border: #E2DDCD;
+        --border-strong: #CFC8B2;
+
+        --text-primary: #1E251F;
+        --text-secondary: #5B6459;
+        --text-tertiary: #8C9488;
+
+        --success: #1E7A4C;
+        --danger: #B8442F;
+
+        --radius: 10px;
+        --radius-sm: 6px;
+
+        --font-display: 'Fraunces', serif;
+        --font-body: 'Inter', sans-serif;
+        --font-mono: 'JetBrains Mono', monospace;
     }
 
-    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"], [data-testid="stAppViewBlockContainer"], [data-testid="stMain"] {
-        background: radial-gradient(circle at top left, #121a2b 0%, #0B0F19 55%, #090c14 100%) !important;
-        color: var(--text-main) !important;
+    html, body, [data-testid="stAppViewContainer"], [data-testid="stHeader"],
+    [data-testid="stAppViewBlockContainer"], [data-testid="stMain"] {
+        background: var(--bg-page) !important;
+        color: var(--text-primary) !important;
         font-family: 'Inter', sans-serif !important;
     }
 
     [data-testid="stHeader"] { background: transparent !important; }
 
-    /* ---------- Bouton pour rouvrir la sidebar (flèche >>) ---------- */
+    /* ---------- Bouton pour rouvrir la sidebar ---------- */
     [data-testid="collapsedControl"] {
-        background: rgba(19, 26, 42, 0.6) !important;
-        border: 1px solid var(--border-soft) !important;
-        border-radius: 8px !important;
-        opacity: 1 !important;
-        visibility: visible !important;
+        background: var(--bg-surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius-sm) !important;
+    }
+    [data-testid="collapsedControl"] svg { fill: var(--text-secondary) !important; }
+    [data-testid="collapsedControl"] button { background: transparent !important; }
+
+    /* ---------- Titres : couleur pleine, pas de dégradé sur chaque titre ---------- */
+    h1 {
+        color: var(--text-primary) !important;
+        font-family: var(--font-display) !important;
+        font-weight: 600 !important;
+        font-size: 2rem !important;
+        letter-spacing: -0.3px;
+        border-bottom: 1px solid var(--border);
+        padding-bottom: 12px;
+        margin-bottom: 20px !important;
     }
 
-    [data-testid="collapsedControl"] svg {
-        fill: var(--text-muted) !important;
-        color: var(--text-muted) !important;
+    h2, h3 {
+        color: var(--text-primary) !important;
+        font-family: var(--font-display) !important;
+        font-weight: 600 !important;
     }
 
-    [data-testid="collapsedControl"] button {
-        background: transparent !important;
-    }
-
-    /* ---------- Titres ---------- */
-    h1, h2 {
-        background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 50%, var(--gold-dark) 100%) !important;
-        -webkit-background-clip: text !important;
-        -webkit-text-fill-color: transparent !important;
-        background-clip: text !important;
-        font-family: 'Inter', sans-serif !important;
-        font-weight: 800 !important;
-        letter-spacing: -0.5px;
-    }
-
-    h3, h4 {
-        color: var(--text-main) !important;
-        font-family: 'Inter', sans-serif !important;
+    h4 {
+        color: var(--text-primary) !important;
+        font-family: var(--font-body) !important;
         font-weight: 700 !important;
     }
 
-    p, span, label, .stMarkdown, .stCaption { color: var(--text-main); }
+    /* Sous-titres de section (##### dans le code) : discrets, en majuscule espacée */
+    h5 {
+        color: var(--text-tertiary) !important;
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        letter-spacing: 1px !important;
+        text-transform: uppercase !important;
+        margin-bottom: 12px !important;
+    }
 
-    /* ---------- Labels des champs (Nom d'utilisateur, Mot de passe, etc.) ---------- */
+    p, span, label, .stMarkdown, .stCaption { color: var(--text-primary); }
+
     [data-testid="stWidgetLabel"] p, [data-testid="stWidgetLabel"] label, [data-testid="stWidgetLabel"] {
-        color: var(--text-main) !important;
+        color: var(--text-secondary) !important;
         font-weight: 600 !important;
+        font-size: 13px !important;
         opacity: 1 !important;
     }
 
-    /* ---------- Texte tapé + placeholder dans les champs ---------- */
     input::placeholder, textarea::placeholder {
-        color: var(--text-muted) !important;
+        color: var(--text-tertiary) !important;
         opacity: 1 !important;
     }
 
     input, textarea, div[data-baseweb="select"] span {
-        color: var(--text-main) !important;
-        -webkit-text-fill-color: var(--text-main) !important;
+        color: var(--text-primary) !important;
+        -webkit-text-fill-color: var(--text-primary) !important;
     }
 
-    /* ---------- Icône œil (afficher/cacher mot de passe) ---------- */
     button[title="Show password"] svg, button[title="Hide password"] svg,
     div[data-baseweb="input"] button svg {
-        fill: var(--text-muted) !important;
+        fill: var(--text-tertiary) !important;
     }
 
-    /* ---------- Cards / Containers (effet glassmorphism + glow au survol) ---------- */
+    /* ---------- Cards : un seul style, pas de lift+glow au hover partout ---------- */
     div[data-testid="stContainer"], div[data-testid="stVerticalBlockBorderWrapper"] {
-        background: linear-gradient(145deg, var(--bg-card) 0%, #0F1524 100%) !important;
-        border: 1px solid var(--border-soft) !important;
-        border-radius: 18px !important;
-        padding: 24px !important;
-        box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.6) !important;
-        backdrop-filter: blur(10px);
-        transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease !important;
+        background: var(--bg-surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius) !important;
+        padding: 20px !important;
+        transition: border-color 0.15s ease !important;
     }
 
     div[data-testid="stContainer"]:hover, div[data-testid="stVerticalBlockBorderWrapper"]:hover {
-        transform: translateY(-4px) !important;
-        box-shadow: 0 16px 40px -12px rgba(240, 184, 77, 0.25), 0 0 0 1px rgba(240, 184, 77, 0.3) !important;
-        border-color: var(--gold) !important;
+        border-color: var(--border-strong) !important;
     }
 
-    /* ---------- Expander (menu déroulant show/hide) ---------- */
+    /* ---------- Expander ---------- */
     [data-testid="stExpander"] {
-        background: linear-gradient(145deg, var(--bg-card) 0%, #0F1524 100%) !important;
-        border: 1px solid var(--border-soft) !important;
-        border-radius: 14px !important;
-        margin-bottom: 18px !important;
+        background: var(--bg-surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius) !important;
+        margin-bottom: 16px !important;
     }
-
     [data-testid="stExpander"] summary {
-        color: var(--text-main) !important;
-        font-weight: 700 !important;
+        color: var(--text-primary) !important;
+        font-weight: 600 !important;
     }
-
-    [data-testid="stExpander"] summary:hover {
-        color: var(--gold) !important;
-    }
+    [data-testid="stExpander"] summary:hover { color: var(--accent) !important; }
 
     /* ---------- Sidebar ---------- */
     [data-testid="stSidebar"] {
-        background: linear-gradient(180deg, #0D1220 0%, #090C14 100%) !important;
-        border-right: 1px solid var(--border-soft) !important;
+        background: var(--bg-page) !important;
+        border-right: 1px solid var(--border) !important;
     }
+    [data-testid="stSidebar"] * { color: var(--text-primary) !important; }
 
-    [data-testid="stSidebar"] * { color: var(--text-main) !important; }
-
-    /* ---------- Inputs / Selects / Textareas (tous les niveaux imbriqués) ---------- */
+    /* ---------- Inputs / Selects / Textareas ---------- */
     div[data-baseweb="input"],
     div[data-baseweb="base-input"],
     div[data-baseweb="input"] > div,
@@ -148,156 +168,204 @@ st.markdown("""
     div[data-testid="stTextArea"] div,
     div[data-testid="stNumberInput"] div,
     textarea, input {
-        background-color: #0F1524 !important;
-        color: var(--text-main) !important;
-        -webkit-text-fill-color: var(--text-main) !important;
+        background-color: var(--bg-surface-raised) !important;
+        color: var(--text-primary) !important;
+        -webkit-text-fill-color: var(--text-primary) !important;
     }
 
     div[data-baseweb="input"], div[data-baseweb="select"] > div, div[data-baseweb="textarea"] {
-        border: 1px solid var(--border-soft) !important;
-        border-radius: 10px !important;
-        transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius-sm) !important;
+        transition: border-color 0.15s ease !important;
     }
 
-    /* ---------- Empêche le navigateur d'imposer un fond blanc (autofill / saisie) ---------- */
     input:-webkit-autofill,
     input:-webkit-autofill:hover,
     input:-webkit-autofill:focus,
     input:-webkit-autofill:active,
     textarea:-webkit-autofill,
     textarea:-webkit-autofill:focus {
-        -webkit-box-shadow: 0 0 0px 1000px #0F1524 inset !important;
-        box-shadow: 0 0 0px 1000px #0F1524 inset !important;
-        -webkit-text-fill-color: var(--text-main) !important;
-        caret-color: var(--text-main) !important;
+        -webkit-box-shadow: 0 0 0px 1000px var(--bg-surface-raised) inset !important;
+        box-shadow: 0 0 0px 1000px var(--bg-surface-raised) inset !important;
+        -webkit-text-fill-color: var(--text-primary) !important;
+        caret-color: var(--text-primary) !important;
         transition: background-color 9999s ease-in-out 0s, color 9999s ease-in-out 0s !important;
     }
 
     div[data-baseweb="input"]:focus-within, div[data-baseweb="select"] > div:focus-within, div[data-baseweb="textarea"]:focus-within {
-        border-color: var(--gold) !important;
-        box-shadow: 0 0 0 3px rgba(240, 184, 77, 0.15) !important;
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 2px var(--accent-soft) !important;
     }
 
-    /* ---------- Radio (menu sidebar) ---------- */
+    /* ---------- Radio (menu sidebar) : état actif visible, pas de glow ---------- */
     div[data-testid="stRadio"] label {
-        background-color: #0F1524 !important;
-        border: 1px solid var(--border-soft) !important;
-        padding: 10px 15px !important;
-        border-radius: 10px !important;
-        margin-bottom: 8px !important;
+        background-color: var(--bg-surface) !important;
+        border: 1px solid var(--border) !important;
+        padding: 10px 14px !important;
+        border-radius: var(--radius-sm) !important;
+        margin-bottom: 6px !important;
         font-weight: 600 !important;
+        font-size: 14px !important;
         cursor: pointer !important;
-        transition: all 0.2s ease !important;
+        transition: border-color 0.15s ease, background-color 0.15s ease !important;
     }
-
     div[data-testid="stRadio"] label:hover {
-        border-color: var(--gold) !important;
-        background-color: #171F33 !important;
+        border-color: var(--border-strong) !important;
+        background-color: var(--bg-surface-raised) !important;
     }
 
-    /* ---------- Boutons dorés avec glow ---------- */
+    /* ---------- Boutons : couleur pleine, ombre discrète ---------- */
     div.stButton > button, div[data-testid="stFormSubmitButton"] button, div[data-testid="stDownloadButton"] button {
-        background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 55%, var(--gold-dark) 100%) !important;
-        color: #0B0F19 !important;
-        font-weight: 800 !important;
+        background: var(--accent) !important;
+        color: #14100A !important;
+        font-weight: 700 !important;
         border: none !important;
-        border-radius: 10px !important;
-        padding: 11px 20px !important;
+        border-radius: var(--radius-sm) !important;
+        padding: 10px 18px !important;
         width: 100% !important;
-        box-shadow: 0 4px 16px rgba(240, 184, 77, 0.35) !important;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease !important;
+        transition: filter 0.15s ease !important;
     }
-
     div.stButton > button:hover, div[data-testid="stFormSubmitButton"] button:hover, div[data-testid="stDownloadButton"] button:hover {
-        transform: translateY(-2px) scale(1.01) !important;
-        box-shadow: 0 8px 28px rgba(240, 184, 77, 0.5) !important;
-        filter: brightness(1.08) !important;
+        filter: brightness(1.1) !important;
     }
+    div.stButton > button:active { filter: brightness(0.95) !important; }
 
-    div.stButton > button:active {
-        transform: translateY(0) scale(0.99) !important;
-    }
-
-    /* ---------- Bouton icône œil (show/hide password) - reste discret, PAS un bouton doré ---------- */
     div[data-baseweb="input"] button {
         background: transparent !important;
         width: auto !important;
         box-shadow: none !important;
         padding: 4px !important;
     }
+    div[data-baseweb="input"] button svg { fill: var(--text-tertiary) !important; }
 
-    div[data-baseweb="input"] button svg {
-        fill: var(--text-muted) !important;
-    }
+    /* ---------- Barre de décoration : fine ligne fixe, pas d'animation ---------- */
+    [data-testid="stDecoration"] { background: var(--accent) !important; height: 2px !important; }
 
-    /* ---------- Barre de décoration en haut (glow animé) ---------- */
-    [data-testid="stDecoration"] {
-        background: linear-gradient(90deg, var(--gold-dark), var(--gold-light), var(--gold-dark)) !important;
-        background-size: 200% auto !important;
-        animation: shimmer 3s linear infinite;
-    }
-
-    @keyframes shimmer {
-        0% { background-position: 0% 50%; }
-        100% { background-position: 200% 50%; }
-    }
-
-    /* ---------- Dataframes / tableaux ---------- */
+    /* ---------- Dataframes ---------- */
     [data-testid="stDataFrame"] {
-        border: 1px solid var(--border-soft) !important;
-        border-radius: 12px !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius-sm) !important;
         overflow: hidden;
     }
 
-    /* ---------- Alertes (success / error / warning / info) ---------- */
+    /* ---------- Alertes ---------- */
     div[data-testid="stAlert"] {
-        border-radius: 12px !important;
-        border: 1px solid var(--border-soft) !important;
-        backdrop-filter: blur(6px);
+        border-radius: var(--radius-sm) !important;
+        border: 1px solid var(--border) !important;
     }
 
-    /* ---------- Scrollbar dorée fine ---------- */
+    /* ---------- Scrollbar ---------- */
     ::-webkit-scrollbar { width: 8px; height: 8px; }
-    ::-webkit-scrollbar-track { background: #0B0F19; }
-    ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 8px; }
-    ::-webkit-scrollbar-thumb:hover { background: var(--gold); }
+    ::-webkit-scrollbar-track { background: var(--bg-page); }
+    ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
 
-    /* ---------- hr ---------- */
-    hr { border-color: var(--border-soft) !important; }
+    hr { border-color: var(--border) !important; }
 
-    /* ---------- Responsive Mobile : empêche le débordement horizontal ---------- */
+    /* ---------- Cache l'icône de lien (ancre) qui apparaît automatiquement à côté des titres ---------- */
+    [data-testid="stHeaderActionElements"], h1 a, h2 a, h3 a, h4 a {
+        display: none !important;
+    }
+
+    /* ---------- Carte de connexion : contenue, centrée. Ciblée UNIQUEMENT sur le
+       container "login_card" (via key), pas sur tous les formulaires de l'app.
+       Avant, la règle visait [data-testid="stForm"] en général, ce qui rétrécissait
+       aussi le formulaire de commande (Ajouter Commande) en une petite carte de 400px.
+
+       Signature de la marque : un sceau postal qui chevauche le haut de la carte,
+       et une ligne perforée en pointillés — le détail d'un bordereau d'expédition
+       qu'on détache. C'est la seule audace visuelle de la page ; tout le reste
+       reste sobre. ---------- */
+    .st-key-login_card {
+        position: relative;
+        background: var(--bg-surface) !important;
+        border: 1px solid var(--border) !important;
+        border-radius: var(--radius) !important;
+        padding: 44px 36px 36px 36px !important;
+        max-width: 400px !important;
+        margin: 44px auto 0 auto !important;
+        box-shadow: 0 20px 40px -24px rgba(26, 31, 41, 0.18) !important;
+    }
+
+    .st-key-login_card::before {
+        content: "N";
+        position: absolute;
+        top: -26px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #FFFFFF;
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 22px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 6px 16px -4px rgba(199, 122, 43, 0.5), 0 0 0 4px var(--bg-page);
+        z-index: 2;
+    }
+
+    .st-key-login_card::after {
+        content: "";
+        position: absolute;
+        top: 30px;
+        left: 24px;
+        right: 24px;
+        height: 0;
+        border-top: 2px dashed var(--border-strong);
+    }
+
+    .st-key-login_card [data-testid="stForm"] {
+        background: transparent !important;
+        border: none !important;
+        padding: 12px 0 0 0 !important;
+        margin: 0 !important;
+        box-shadow: none !important;
+        max-width: none !important;
+    }
+
+    .st-key-login_card [data-testid="stTextInput"] {
+        margin-bottom: 4px !important;
+    }
+
+    [data-testid="stImage"] img {
+        display: block !important;
+        margin: 0 auto !important;
+    }
+
+    /* ---------- Chiffres / IDs / dates : police mono pour lisibilité des données ---------- */
+    .mono-data { font-family: 'JetBrains Mono', monospace !important; }
+
+    /* ---------- Responsive Mobile ---------- */
     html, body { overflow-x: hidden !important; }
-
     [data-testid="stAppViewContainer"], [data-testid="stMain"], .main, section.main {
         max-width: 100vw !important;
         overflow-x: hidden !important;
     }
-
     @media (max-width: 768px) {
-        .block-container {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            max-width: 100vw !important;
-        }
-
-        h1 { font-size: 1.6rem !important; }
-        h2 { font-size: 1.3rem !important; }
-        h3, h4 { font-size: 1.05rem !important; }
-
-        div[data-testid="stContainer"], div[data-testid="stVerticalBlockBorderWrapper"] {
-            padding: 14px !important;
-        }
-
-        div[data-testid="column"] {
-            width: 100% !important;
-            flex: 1 1 100% !important;
-            min-width: 100% !important;
-        }
+        .block-container { padding-left: 1rem !important; padding-right: 1rem !important; max-width: 100vw !important; }
+        h1 { font-size: 1.5rem !important; }
+        h2 { font-size: 1.2rem !important; }
+        h3, h4 { font-size: 1rem !important; }
+        div[data-testid="stContainer"], div[data-testid="stVerticalBlockBorderWrapper"] { padding: 14px !important; }
+        div[data-testid="column"] { width: 100% !important; flex: 1 1 100% !important; min-width: 100% !important; }
     }
 </style>
 """, unsafe_allow_html=True)
 
-DB_PATH = "nearya_express.db"
+# ==========================================
+# DB_PATH : chemin ABSOLU basé sur l'emplacement du script.
+# Avant : DB_PATH = "nearya_express.db" (chemin relatif) -> si tu lances
+# `streamlit run app.py` depuis un dossier différent (nouveau terminal,
+# codespace redémarré, etc.), Python créait un NOUVEAU fichier .db vide
+# dans le dossier courant, et tes anciennes données "disparaissaient".
+# Avec le chemin absolu, c'est toujours EXACTEMENT le même fichier,
+# peu importe d'où tu lances le script.
+# ==========================================
+DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "nearya_express.db")
 
 # ==========================================
 # 2. DATABASE: CONNECTION CENTRALE + INIT
@@ -352,13 +420,34 @@ def init_db():
                     status TEXT, created_by TEXT, date_created TEXT, shop_photo TEXT
                 )
             """)
-            try:
-                cursor.execute("INSERT INTO users (username, password, role) VALUES ('admin1', 'admin123', 'Admin')")
-                cursor.execute("INSERT INTO users (username, password, role) VALUES ('commercial1', 'comm123', 'Commercial')")
-                cursor.execute("INSERT INTO users (username, password, role) VALUES ('commercial2', 'comm456', 'Commercial')")
-                conn.commit()
-            except sqlite3.IntegrityError:
-                pass  # les utilisateurs existent déjà
+
+            # ==========================================
+            # Comptes fixes de l'application.
+            # Avant : les comptes n'étaient créés qu'une seule fois (INSERT simple),
+            # et si le username existait déjà, toute modification du mot de passe
+            # dans le code était ignorée (IntegrityError -> pass). Résultat :
+            # le mot de passe "réel" dans la base ne correspondait jamais à ce
+            # qui était écrit ici, ce qui donnait l'impression que le mot de
+            # passe "changeait tout seul".
+            #
+            # Maintenant : on utilise INSERT OR REPLACE, donc à CHAQUE démarrage
+            # de l'app, ces 5 comptes sont garantis d'avoir exactement le
+            # username/mot de passe/role définis ci-dessous. Si tu veux changer
+            # un mot de passe, tu le changes ici et il sera appliqué au prochain
+            # lancement, sans exception ni ambiguïté.
+            # ==========================================
+            fixed_accounts = [
+                ("admin",       "Nqse2340", "Admin"),
+                ("commercial1", "Nqse2341", "Commercial"),
+                ("commercial2", "Nqse2342", "Commercial"),
+                ("commercial3", "Nqse2343", "Commercial"),
+                ("commercial4", "Nqse2344", "Commercial"),
+            ]
+            cursor.executemany(
+                "INSERT OR REPLACE INTO users (username, password, role) VALUES (?, ?, ?)",
+                fixed_accounts
+            )
+            conn.commit()
     except sqlite3.OperationalError as e:
         st.error(f"❌ Erreur d'initialisation de la base : {e}")
         st.stop()
@@ -429,9 +518,9 @@ LOGO_FILE = "WhatsApp Image 2026-07-05 at 3.43.54 AM.jpeg"
 
 def commercial_page(current_menu):
     st.markdown("""
-        <div style='background: linear-gradient(135deg, rgba(240,184,77,0.12), rgba(240,184,77,0.04)); border: 1px solid rgba(240,184,77,0.35); padding: 14px 20px; border-radius: 10px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;'>
-            <span style='font-size: 22px; font-weight: 900; background: linear-gradient(135deg, #FFD57E 0%, #F0B84D 50%, #C6912E 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; letter-spacing: -0.5px;'>NearYa</span>
-            <span style='color: #8895AD; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px;'>Express</span>
+        <div style='background: var(--bg-surface); border: 1px solid var(--border); padding: 14px 20px; border-radius: 10px; margin-bottom: 25px; display: flex; align-items: center; gap: 10px;'>
+            <span style='font-size: 20px; font-weight: 800; color: var(--text-primary); letter-spacing: -0.3px;'>NearYa</span>
+            <span style='color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-top: 3px;'>Express</span>
         </div>
     """, unsafe_allow_html=True)
 
@@ -443,7 +532,14 @@ def commercial_page(current_menu):
 
         with main_col1:
             with st.form("manual_order_form"):
-                st.markdown("<h4 style='margin-top:0; color:#F0B84D;'>👤 1. Destinataire (Client)</h4>", unsafe_allow_html=True)
+                st.markdown(
+                    "<div style='display:flex; align-items:center; gap:10px; margin-bottom:14px;'>"
+                    "<span style='display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; "
+                    "border-radius:50%; background:var(--accent-soft); border:1px solid var(--accent-border); color:var(--accent); "
+                    "font-family:var(--font-mono); font-weight:600; font-size:13px;'>1</span>"
+                    "<h4 style='margin:0; color:var(--text-primary);'>👤 Destinataire (Client)</h4></div>",
+                    unsafe_allow_html=True
+                )
                 c_name, c_phone = st.columns(2)
                 with c_name:
                     client_name = st.text_input("Nom Complet du Client *")
@@ -454,8 +550,15 @@ def commercial_page(current_menu):
                 address = st.text_input("Adresse de Livraison exacte *")
                 maps_link = st.text_input("Lien Google Maps (Optionnel)")
 
-                st.markdown("<hr style='border-color:#232D42;'>", unsafe_allow_html=True)
-                st.markdown("<h4 style='color:#F0B84D;'>📦 2. Logistique & Upload Photos</h4>", unsafe_allow_html=True)
+                st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
+                st.markdown(
+                    "<div style='display:flex; align-items:center; gap:10px; margin-bottom:14px;'>"
+                    "<span style='display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; "
+                    "border-radius:50%; background:var(--accent-soft); border:1px solid var(--accent-border); color:var(--accent); "
+                    "font-family:var(--font-mono); font-weight:600; font-size:13px;'>2</span>"
+                    "<h4 style='margin:0; color:var(--text-primary);'>📦 Logistique & Upload Photos</h4></div>",
+                    unsafe_allow_html=True
+                )
 
                 col_ram, col_nb = st.columns(2)
                 with col_ram:
@@ -471,8 +574,15 @@ def commercial_page(current_menu):
                 with col_weight:
                     weight = st.number_input("Poids estimé (KG)", min_value=0.1, value=1.0)
 
-                st.markdown("<hr style='border-color:#232D42;'>", unsafe_allow_html=True)
-                st.markdown("<h4 style='color:#F0B84D;'>💰 3. Produit & Facturation</h4>", unsafe_allow_html=True)
+                st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
+                st.markdown(
+                    "<div style='display:flex; align-items:center; gap:10px; margin-bottom:14px;'>"
+                    "<span style='display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; "
+                    "border-radius:50%; background:var(--accent-soft); border:1px solid var(--accent-border); color:var(--accent); "
+                    "font-family:var(--font-mono); font-weight:600; font-size:13px;'>3</span>"
+                    "<h4 style='margin:0; color:var(--text-primary);'>💰 Produit & Facturation</h4></div>",
+                    unsafe_allow_html=True
+                )
 
                 product = st.selectbox("Désignation Produit", ["Carton emballage renforcé", "Étiquettes adresse (x100)"])
                 quantity = st.number_input("Quantité", min_value=1, value=1)
@@ -535,7 +645,7 @@ def admin_page(current_menu):
         if commercial_names:
             with st.expander(f"🧑‍💼 Commerciaux enregistrés ({len(commercial_names)})", expanded=False):
                 badges = "".join([
-                    f"<span style='background: linear-gradient(135deg, rgba(240,184,77,0.18), rgba(240,184,77,0.06)); border: 1px solid rgba(240,184,77,0.4); color: #F0B84D; padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-right: 8px; display: inline-block; margin-bottom: 8px;'>🧑‍💼 {name}</span>"
+                    f"<span style='background: var(--accent-soft); border: 1px solid var(--accent-border); color: var(--accent); padding: 5px 14px; border-radius: 20px; font-size: 13px; font-weight: 700; margin-right: 8px; display: inline-block; margin-bottom: 8px;'>🧑‍💼 {name}</span>"
                     for name in commercial_names
                 ])
                 st.markdown(f"<div>{badges}</div>", unsafe_allow_html=True)
@@ -566,9 +676,9 @@ def admin_page(current_menu):
             for _, row in df.iterrows():
                 with st.container(border=True):
                     st.markdown(
-                        f"<span style='background: linear-gradient(135deg, rgba(240,184,77,0.2), rgba(240,184,77,0.08)); "
-                        f"border: 1px solid rgba(240,184,77,0.4); color: #F0B84D; padding: 4px 12px; border-radius: 8px; "
-                        f"font-size: 13px; font-weight: 800;'>🧑‍💼 Commercial : {row['created_by']}</span>",
+                        f"<span style='background: var(--accent-soft); "
+                        f"border: 1px solid var(--accent-border); color: var(--accent); padding: 4px 12px; border-radius: 8px; "
+                        f"font-size: 13px; font-weight: 700;'>🧑‍💼 Commercial : {row['created_by']}</span>",
                         unsafe_allow_html=True
                     )
                     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
@@ -655,69 +765,60 @@ def admin_page(current_menu):
 # 4. MAIN ROUTING & SUPER SIDEBAR FILLING
 # ==========================================
 if not st.session_state["logged_in"]:
-    col_space1, col_logo, col_space2 = st.columns([1.5, 1, 1.5])
-    with col_logo:
-        if os.path.exists(LOGO_FILE):
-            st.image(LOGO_FILE, use_container_width=True)
-        else:
-            st.markdown("<h1 style='text-align: center; color: #F0B84D;'>NearYa</h1>", unsafe_allow_html=True)
+    st.markdown("<div style='height: 60px'></div>", unsafe_allow_html=True)
 
-    st.markdown("<h3 style='text-align: center; margin-bottom: 30px;'>🔐 Connexion</h3>", unsafe_allow_html=True)
-    with st.form("login_form"):
-        username_input = st.text_input("Nom d'utilisateur")
-        password_input = st.text_input("Mot de passe", type="password")
-        if st.form_submit_button("Se connecter"):
-            user = check_login(username_input, password_input)
-            if user:
-                st.session_state["logged_in"] = True
-                st.session_state["username"] = username_input
-                st.session_state["role"] = user[0]
-                st.rerun()
-            else:
-                st.error("Identifiants incorrects.")
+    if os.path.exists(LOGO_FILE):
+        st.image(LOGO_FILE, width=160)
+    else:
+        st.markdown(
+            "<h1 style='text-align: center !important; color: var(--text-primary) !important; border-bottom: none !important; padding-bottom: 0 !important; margin-bottom: 4px !important; font-size: 2.4rem !important; letter-spacing: -0.5px !important;'>"
+            "NearYa <span style='color: var(--accent);'>Express</span></h1>",
+            unsafe_allow_html=True
+        )
+
+    st.markdown("<div style='height: 28px'></div>", unsafe_allow_html=True)
+
+    with st.container(key="login_card"):
+        with st.form("login_form"):
+            username_input = st.text_input("Nom d'utilisateur")
+            password_input = st.text_input("Mot de passe", type="password")
+            if st.form_submit_button("Se connecter"):
+                user = check_login(username_input, password_input)
+                if user:
+                    st.session_state["logged_in"] = True
+                    st.session_state["username"] = username_input
+                    st.session_state["role"] = user[0]
+                    st.rerun()
+                else:
+                    st.error("Identifiants incorrects.")
 else:
-    st.sidebar.markdown("<h1 style='text-align: center; font-size: 38px; font-weight: 800; color: #F0B84D; margin-bottom: 0;'>NearYa</h1>", unsafe_allow_html=True)
-    st.sidebar.markdown("<p style='text-align: center; font-size: 11px; color: #94A3B8; margin-top: 0; letter-spacing: 2px; font-weight:700;'>EXPRESS LOGISTICS</p>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h1 style='text-align: center !important; font-size: 26px !important; font-weight: 700 !important; color: var(--text-primary) !important; margin-bottom: 0 !important; border-bottom: none !important; padding-bottom: 0 !important;'>NearYa</h1>", unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='text-align: center; font-size: 11px; color: var(--accent); margin-top: 2px; letter-spacing: 2px; font-weight:700;'>EXPRESS LOGISTICS</p>", unsafe_allow_html=True)
 
     if os.path.exists(LOGO_FILE):
         st.sidebar.image(LOGO_FILE, use_container_width=True)
-    st.sidebar.markdown("<hr style='border-color:#232D42; margin: 15px 0;'>", unsafe_allow_html=True)
+    st.sidebar.markdown("<hr style='border-color:var(--border); margin: 15px 0;'>", unsafe_allow_html=True)
 
     st.sidebar.markdown(f"""
-        <div style='background: linear-gradient(145deg, #131A2A, #0F1524); border: 1px solid #232D42; padding: 15px; border-radius: 14px; box-shadow: 0 8px 20px -8px rgba(0,0,0,0.5);'>
-            <div style='display: flex; align-items: center; gap: 10px;'>
-                <div style='width: 10px; height: 10px; background-color: #22C55E; border-radius: 50%; display: inline-block; box-shadow: 0 0 8px #22C55E;'></div>
-                <span style='font-size: 13px; color: #8895AD; font-weight: 600;'>En ligne</span>
+        <div style='background: var(--bg-surface); border: 1px solid var(--border); padding: 15px; border-radius: 14px;'>
+            <div style='display: flex; align-items: center; gap: 8px;'>
+                <div style='width: 8px; height: 8px; background-color: var(--success); border-radius: 50%; display: inline-block;'></div>
+                <span style='font-size: 13px; color: var(--text-secondary); font-weight: 600;'>En ligne</span>
             </div>
-            <p style='margin: 8px 0 2px 0; font-size: 16px; font-weight: 700; color: #EAEEF7;'>{st.session_state['username']}</p>
-            <span style='background: linear-gradient(135deg, rgba(240,184,77,0.2), rgba(240,184,77,0.08)); border: 1px solid rgba(240,184,77,0.4); color: #F0B84D; padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;'>✨ Espace {st.session_state['role']}</span>
+            <p style='margin: 8px 0 6px 0; font-size: 16px; font-weight: 700; color: var(--text-primary);'>{st.session_state['username']}</p>
+            <span style='background: var(--accent-soft); border: 1px solid var(--accent-border); color: var(--accent); padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;'>Espace {st.session_state['role']}</span>
         </div>
     """, unsafe_allow_html=True)
 
-    st.sidebar.markdown("<hr style='border-color:#232D42; margin: 20px 0;'>", unsafe_allow_html=True)
-    st.sidebar.markdown("<p style='font-size: 11px; font-weight: 700; color: #94A3B8; letter-spacing: 0.5px; margin-bottom: 10px;'>MENU CONTROL</p>", unsafe_allow_html=True)
+    st.sidebar.markdown("<hr style='border-color:var(--border); margin: 20px 0;'>", unsafe_allow_html=True)
+    st.sidebar.markdown("<p style='font-size: 11px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.5px; margin-bottom: 10px;'>MENU CONTROL</p>", unsafe_allow_html=True)
 
     if st.session_state["role"] == "Commercial":
         menu = st.sidebar.radio("Navigation", ["📦 Ajouter Commande", "🔍 Recherche & Suivi"], label_visibility="collapsed")
     else:
         menu = st.sidebar.radio("Navigation", ["📋 Suivi Global & Recherche", "📊 Statistiques & Performance", "📅 Rapport Journalier", "🗺️ Carte Google Maps"], label_visibility="collapsed")
 
-    st.sidebar.markdown("<hr style='border-color:#232D42; margin: 20px 0;'>", unsafe_allow_html=True)
-
-    st.sidebar.markdown("""
-        <div style='background-color: #131A2A; border: 1px solid #232D42; padding: 12px; border-radius: 10px;'>
-            <div style='display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 5px; font-weight:600;'>
-                <span style='color: #8895AD;'>Performance Réseau</span>
-                <span style='color: #F0B84D;'>100%</span>
-            </div>
-            <div style='background-color: #232D42; border-radius: 4px; height: 8px; overflow: hidden;'>
-                <div style='background: linear-gradient(90deg, #C6912E, #FFD57E); width: 100%; height: 100%; box-shadow: 0 0 8px rgba(240,184,77,0.6);'></div>
-            </div>
-        </div>
-    """, unsafe_allow_html=True)
-
-    st.sidebar.caption(f"📅 Système Live 2026")
-    st.sidebar.markdown("<br>", unsafe_allow_html=True)
+    st.sidebar.markdown("<hr style='border-color:var(--border); margin: 20px 0;'>", unsafe_allow_html=True)
 
     if st.sidebar.button("🚪 Se déconnecter"):
         st.session_state["logged_in"] = False
