@@ -3,6 +3,7 @@ import streamlit.components.v1 as components
 import sqlite3
 import pandas as pd
 import os
+import base64
 from datetime import datetime
 from contextlib import contextmanager
 
@@ -384,9 +385,28 @@ def init_db():
                     address TEXT, maps_link TEXT, product TEXT, quantity INTEGER,
                     nb_colis INTEGER, ramassage TEXT, type_colis TEXT, weight REAL,
                     payment_mode TEXT, zone TEXT, notes TEXT, time_slot TEXT,
-                    status TEXT, created_by TEXT, date_created TEXT, shop_photo TEXT
+                    status TEXT, created_by TEXT, date_created TEXT, shop_photo TEXT,
+                    amount REAL, delivery_fee REAL, livreur TEXT, date_updated TEXT
                 )
             """)
+
+            # ==========================================
+            # Colonnes ajoutées après la première mise en production (gestion
+            # financière + notifications + livreurs). Sur une base déjà
+            # existante, CREATE TABLE IF NOT EXISTS ne les ajoute pas -> on les
+            # ajoute ici une par une, en ignorant l'erreur si elles existent déjà.
+            # ==========================================
+            new_columns = [
+                ("amount", "REAL"),
+                ("delivery_fee", "REAL"),
+                ("livreur", "TEXT"),
+                ("date_updated", "TEXT"),
+            ]
+            for col_name, col_type in new_columns:
+                try:
+                    cursor.execute(f"ALTER TABLE orders ADD COLUMN {col_name} {col_type}")
+                except sqlite3.OperationalError:
+                    pass  # la colonne existe déjà
 
             # ==========================================
             # Comptes fixes de l'application.
@@ -432,7 +452,8 @@ def get_orders_df():
         return pd.DataFrame(columns=[
             "id", "client_name", "phone", "address", "maps_link", "product", "quantity",
             "nb_colis", "ramassage", "type_colis", "weight", "payment_mode", "zone",
-            "notes", "time_slot", "status", "created_by", "date_created", "shop_photo"
+            "notes", "time_slot", "status", "created_by", "date_created", "shop_photo",
+            "amount", "delivery_fee", "livreur", "date_updated"
         ])
 
 
@@ -441,9 +462,33 @@ def insert_order(values):
         with get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO orders (client_name, phone, address, maps_link, product, quantity, nb_colis, ramassage, type_colis, weight, payment_mode, zone, notes, time_slot, status, created_by, date_created, shop_photo)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'En attente', ?, ?, ?)
+                INSERT INTO orders (client_name, phone, address, maps_link, product, quantity, nb_colis, ramassage, type_colis, weight, payment_mode, zone, notes, time_slot, status, created_by, date_created, shop_photo, amount, delivery_fee, livreur, date_updated)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'En attente', ?, ?, ?, ?, ?, ?, ?)
             """, values)
+            conn.commit()
+        return True, None
+    except sqlite3.OperationalError as e:
+        return False, str(e)
+
+
+def update_order_status(order_id, new_status, livreur=None):
+    """Met à jour le statut d'une commande (et le livreur assigné si fourni),
+    en enregistrant la date de mise à jour — utilisé pour calculer les délais
+    moyens et détecter les livraisons terminées récemment."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            if livreur is not None:
+                cursor.execute(
+                    "UPDATE orders SET status = ?, livreur = ?, date_updated = ? WHERE id = ?",
+                    (new_status, livreur, now_str, order_id)
+                )
+            else:
+                cursor.execute(
+                    "UPDATE orders SET status = ?, date_updated = ? WHERE id = ?",
+                    (new_status, now_str, order_id)
+                )
             conn.commit()
         return True, None
     except sqlite3.OperationalError as e:
@@ -478,6 +523,40 @@ if "logged_in" not in st.session_state:
     st.session_state["role"] = ""
 
 LOGO_FILE = "WhatsApp Image 2026-07-05 at 3.43.54 AM.jpeg"
+
+# ==========================================
+# Photo de fond (optionnelle) — par exemple une photo de l'équipe commerciale.
+# Dépose un fichier nommé "background.jpg" (ou .jpeg / .png) à côté de app.py
+# et il sera utilisé automatiquement comme arrière-plan, avec un voile clair
+# par-dessus pour que le texte et les cartes restent parfaitement lisibles.
+# Si aucun fichier n'est trouvé, l'app garde son fond uni habituel.
+# ==========================================
+_BACKGROUND_CANDIDATES = ["background.jpg", "background.jpeg", "background.png"]
+
+
+def _inject_background():
+    bg_path = next((p for p in _BACKGROUND_CANDIDATES if os.path.exists(p)), None)
+    if not bg_path:
+        return
+    with open(bg_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode()
+    ext = bg_path.split(".")[-1].lower()
+    mime = "jpeg" if ext in ("jpg", "jpeg") else "png"
+    st.markdown(f"""
+    <style>
+        [data-testid="stAppViewContainer"], [data-testid="stMain"] {{
+            background-image:
+                linear-gradient(rgba(245, 243, 236, 0.92), rgba(245, 243, 236, 0.92)),
+                url("data:image/{mime};base64,{b64}") !important;
+            background-size: cover !important;
+            background-position: center top !important;
+            background-attachment: fixed !important;
+        }}
+    </style>
+    """, unsafe_allow_html=True)
+
+
+_inject_background()
 
 # ==========================================
 # 3. PAGES LOGIC
@@ -606,6 +685,14 @@ def commercial_page(current_menu):
                 product = st.selectbox("Désignation Produit", ["Carton emballage renforcé", "Étiquettes adresse (x100)"])
                 quantity = st.number_input("Quantité", min_value=1, value=1)
                 payment_mode = st.selectbox("Mode de Paiement", ["COD (Cash on Delivery)", "Payé d'avance"])
+
+                c_amount, c_fee = st.columns(2)
+                with c_amount:
+                    amount = st.number_input("Montant à encaisser (DH)", min_value=0.0, value=0.0, step=10.0)
+                with c_fee:
+                    delivery_fee = st.number_input("Frais de livraison (DH)", min_value=0.0, value=0.0, step=5.0)
+
+                livreur = st.text_input("Livreur assigné (optionnel)")
                 time_slot = st.text_input("Tranche Horaire", value="15:00 - 18:00")
                 notes = st.text_area("Notes pour le livreur")
 
@@ -619,7 +706,8 @@ def commercial_page(current_menu):
                                 f.write(uploaded_file.getbuffer())
 
                         today_str = datetime.now().strftime("%Y-%m-%d")
-                        values = (client_name, phone, address, maps_link, product, quantity, nb_colis, ramassage, type_colis, weight, payment_mode, zone, notes, time_slot, st.session_state["username"], today_str, photo_path)
+                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        values = (client_name, phone, address, maps_link, product, quantity, nb_colis, ramassage, type_colis, weight, payment_mode, zone, notes, time_slot, st.session_state["username"], today_str, photo_path, amount, delivery_fee, livreur, now_str)
                         ok, err = insert_order(values)
                         if ok:
                             st.success("Commande et Photo enregistrées !")
@@ -677,7 +765,7 @@ def admin_page(current_menu):
             with col_f2:
                 search_user = st.selectbox("Commercial", ["Tous"] + get_commercial_usernames())
             with col_f3:
-                search_status = st.selectbox("Statut", ["Tous", "En attente", "Livré"])
+                search_status = st.selectbox("Statut", ["Tous", "En attente", "En cours", "Livré", "Échec"])
 
         if not df.empty:
             if search_client:
@@ -710,15 +798,114 @@ def admin_page(current_menu):
                     with c2:
                         st.markdown(f"**Produit :** {row['product']} | **Colis :** {row['nb_colis']}")
                         st.markdown(f"**Ramassage :** {row['ramassage']}")
+                        montant_txt = f"{row['amount']:.0f} DH" if pd.notna(row.get('amount')) else "—"
+                        frais_txt = f"{row['delivery_fee']:.0f} DH" if pd.notna(row.get('delivery_fee')) else "—"
+                        st.markdown(f"**Montant :** {montant_txt}  •  **Frais livraison :** {frais_txt}")
                     with c3:
                         st.markdown(f"⏰ {row['time_slot']}")
                         st.markdown(f"📅 {row['date_created']}")
+
+                    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
+                    c4, c5, c6 = st.columns([2, 2, 1])
+                    with c4:
+                        status_options = ["En attente", "En cours", "Livré", "Échec"]
+                        current_status = row['status'] if row['status'] in status_options else "En attente"
+                        new_status = st.selectbox(
+                            "Statut", status_options,
+                            index=status_options.index(current_status),
+                            key=f"status_{row['id']}", label_visibility="collapsed"
+                        )
+                    with c5:
+                        new_livreur = st.text_input(
+                            "Livreur", value=row['livreur'] if pd.notna(row.get('livreur')) else "",
+                            key=f"livreur_{row['id']}", label_visibility="collapsed",
+                            placeholder="Nom du livreur"
+                        )
+                    with c6:
+                        if st.button("Mettre à jour", key=f"update_{row['id']}"):
+                            ok, err = update_order_status(row['id'], new_status, new_livreur)
+                            if ok:
+                                st.success("Mis à jour !")
+                                st.rerun()
+                            else:
+                                st.error(f"Erreur : {err}")
         else:
             st.info("Aucune commande dans le système.")
+
+    elif current_menu == "🔔 Notifications":
+        st.title("🔔 Notifications & Alertes")
+        if not df.empty:
+            now = datetime.now()
+            df_local = df.copy()
+            df_local['_created_dt'] = pd.to_datetime(df_local['date_created'], errors='coerce')
+            df_local['_updated_dt'] = pd.to_datetime(df_local['date_updated'], errors='coerce')
+
+            today_str = now.strftime("%Y-%m-%d")
+            nouvelles = df_local[df_local['date_created'] == today_str]
+            en_cours_mask = df_local['status'].isin(["En attente", "En cours"])
+            retard = df_local[en_cours_mask & (df_local['_created_dt'] < (now - pd.Timedelta(hours=24)))]
+            echecs = df_local[df_local['status'] == "Échec"]
+            livrees_recentes = df_local[
+                (df_local['status'] == "Livré") &
+                (df_local['_updated_dt'].dt.strftime("%Y-%m-%d") == today_str)
+            ]
+
+            n1, n2, n3, n4 = st.columns(4)
+            n1.metric("🆕 Nouvelles commandes (jour)", len(nouvelles))
+            n2.metric("⏳ En retard (+24h)", len(retard))
+            n3.metric("❌ Échecs", len(echecs))
+            n4.metric("✅ Livrées aujourd'hui", len(livrees_recentes))
+
+            st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
+
+            def notif_block(title, sub_df, empty_msg, icon):
+                st.markdown(f"##### {icon} {title}")
+                if sub_df.empty:
+                    st.caption(empty_msg)
+                else:
+                    view = sub_df[['id', 'client_name', 'created_by', 'status', 'date_created']].rename(columns={
+                        'id': 'N°', 'client_name': 'Client', 'created_by': 'Commercial',
+                        'status': 'Statut', 'date_created': 'Date'
+                    })
+                    st.dataframe(view, use_container_width=True, hide_index=True)
+                st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+
+            notif_block("Nouvelles commandes", nouvelles, "Aucune nouvelle commande aujourd'hui.", "🆕")
+            notif_block("Commandes en retard (plus de 24h sans mise à jour)", retard, "Aucun retard détecté.", "⏳")
+            notif_block("Échecs de livraison", echecs, "Aucun échec signalé.", "❌")
+            notif_block("Livraisons terminées aujourd'hui", livrees_recentes, "Aucune livraison terminée aujourd'hui.", "✅")
+        else:
+            st.info("Aucune commande dans le système pour générer des notifications.")
 
     elif current_menu == "📊 Statistiques & Performance":
         st.title("📊 Analyses & Statistiques Avancées")
         if not df.empty:
+            # ---- Dashboard amélioré : taux de réussite & délai moyen ----
+            df_perf = df.copy()
+            df_perf['_created_dt'] = pd.to_datetime(df_perf['date_created'], errors='coerce')
+            df_perf['_updated_dt'] = pd.to_datetime(df_perf['date_updated'], errors='coerce')
+
+            total_cmd = len(df_perf)
+            nb_livre = (df_perf['status'] == "Livré").sum()
+            nb_echec = (df_perf['status'] == "Échec").sum()
+            taux_reussite = (nb_livre / total_cmd * 100) if total_cmd else 0
+
+            delivered = df_perf[(df_perf['status'] == "Livré") & df_perf['_updated_dt'].notna() & df_perf['_created_dt'].notna()]
+            if not delivered.empty:
+                delais = (delivered['_updated_dt'] - delivered['_created_dt']).dt.total_seconds() / 3600
+                delai_moyen_h = delais.mean()
+                delai_txt = f"{delai_moyen_h:.1f} h"
+            else:
+                delai_txt = "—"
+
+            m1, m2, m3, m4 = st.columns(4)
+            m1.metric("✅ Taux de réussite", f"{taux_reussite:.0f}%")
+            m2.metric("⏱️ Délai moyen de livraison", delai_txt)
+            m3.metric("📦 Total commandes", total_cmd)
+            m4.metric("❌ Échecs", int(nb_echec))
+
+            st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
+
             col_s1, col_s2 = st.columns(2)
 
             with col_s1:
@@ -740,8 +927,58 @@ def admin_page(current_menu):
             ).reset_index().rename(columns={'created_by': 'Commercial'})
             perf_table = perf_table.sort_values('nb_commandes', ascending=False)
             st.dataframe(perf_table, use_container_width=True, hide_index=True)
+
+            # ---- Performance des livreurs ----
+            st.markdown("##### 🚚 Performance des livreurs")
+            df_livreurs = df[df['livreur'].notna() & (df['livreur'].astype(str).str.strip() != "")]
+            if not df_livreurs.empty:
+                livreur_table = df_livreurs.groupby('livreur').agg(
+                    nb_livraisons=('id', 'count'),
+                    nb_livrees=('status', lambda s: (s == "Livré").sum()),
+                    nb_echecs=('status', lambda s: (s == "Échec").sum()),
+                ).reset_index().rename(columns={'livreur': 'Livreur'})
+                livreur_table['Taux de réussite'] = (
+                    livreur_table['nb_livrees'] / livreur_table['nb_livraisons'] * 100
+                ).round(0).astype(int).astype(str) + " %"
+                st.dataframe(livreur_table, use_container_width=True, hide_index=True)
+            else:
+                st.caption("Aucun livreur assigné pour le moment — assignez un livreur depuis « Suivi Global & Recherche ».")
         else:
             st.info("Pas assez de données pour générer des graphiques. Ajoutez des commandes pour voir apparaître les statistiques ici.")
+
+    elif current_menu == "💰 Finances":
+        st.title("💰 Gestion Financière")
+        if not df.empty:
+            df_fin = df.copy()
+            df_fin['amount'] = pd.to_numeric(df_fin['amount'], errors='coerce').fillna(0)
+            df_fin['delivery_fee'] = pd.to_numeric(df_fin['delivery_fee'], errors='coerce').fillna(0)
+
+            cod_mask = df_fin['payment_mode'] == "COD (Cash on Delivery)"
+            a_encaisser = df_fin[cod_mask & (df_fin['status'] != "Livré")]['amount'].sum()
+            deja_encaisse = df_fin[cod_mask & (df_fin['status'] == "Livré")]['amount'].sum()
+            total_frais = df_fin['delivery_fee'].sum()
+
+            f1, f2, f3 = st.columns(3)
+            f1.metric("💵 Montant à encaisser (COD)", f"{a_encaisser:,.0f} DH")
+            f2.metric("✅ Déjà encaissé (COD livrées)", f"{deja_encaisse:,.0f} DH")
+            f3.metric("🚚 Total frais de livraison", f"{total_frais:,.0f} DH")
+
+            st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
+            st.markdown("##### 📅 Rapport financier journalier")
+            rapport_fin = df_fin.groupby('date_created').agg(
+                nb_commandes=('id', 'count'),
+                montant_total=('amount', 'sum'),
+                frais_total=('delivery_fee', 'sum'),
+            ).reset_index().rename(columns={
+                'date_created': 'Date', 'nb_commandes': 'Commandes',
+                'montant_total': 'Montant total (DH)', 'frais_total': 'Frais livraison (DH)'
+            }).sort_values('Date', ascending=False)
+            st.dataframe(rapport_fin, use_container_width=True, hide_index=True)
+
+            csv_fin = rapport_fin.to_csv(index=False).encode('utf-8')
+            st.download_button(label="🟢 Exporter le rapport financier (CSV)", data=csv_fin, file_name=f"finances_{datetime.now().strftime('%Y%m%d')}.csv", mime="text/csv")
+        else:
+            st.info("Aucune commande dans le système pour générer un rapport financier.")
 
     elif current_menu == "📅 Rapport Journalier":
         st.title("📅 Rapport Journalier")
@@ -833,7 +1070,7 @@ else:
     if st.session_state["role"] == "Commercial":
         menu = st.sidebar.radio("Navigation", ["📦 Ajouter Commande", "🔍 Recherche & Suivi"], label_visibility="collapsed")
     else:
-        menu = st.sidebar.radio("Navigation", ["📋 Suivi Global & Recherche", "📊 Statistiques & Performance", "📅 Rapport Journalier", "🗺️ Carte Google Maps"], label_visibility="collapsed")
+        menu = st.sidebar.radio("Navigation", ["📋 Suivi Global & Recherche", "🔔 Notifications", "📊 Statistiques & Performance", "💰 Finances", "📅 Rapport Journalier", "🗺️ Carte Google Maps"], label_visibility="collapsed")
 
     st.sidebar.markdown("<hr style='border-color:var(--border); margin: 20px 0;'>", unsafe_allow_html=True)
 
