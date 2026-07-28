@@ -199,17 +199,45 @@ st.markdown("""
         box-shadow: 0 0 0 2px var(--accent-soft) !important;
     }
 
-    /* ---------- Radio (menu sidebar) : état actif visible, pas de glow ---------- */
+    /* ---------- Radio (menu sidebar) : disposées en grille 2 colonnes,
+       vraiment côte à côte (la sidebar est trop étroite pour que du flex-wrap
+       fonctionne avec des libellés aussi longs — testé et mesuré). ---------- */
+    div[data-testid="stRadio"] {
+        width: 100% !important;
+    }
+    div[data-testid="stRadio"] > label {
+        display: none !important;
+    }
+    div[data-testid="stRadio"] > div,
+    div[data-testid="stRadioGroup"],
+    div[data-testid="stRadio"] > div > div {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        width: 100% !important;
+        gap: 8px !important;
+    }
     div[data-testid="stRadio"] label {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        text-align: center !important;
+        width: 100% !important;
+        height: 64px !important;
+        box-sizing: border-box !important;
         background-color: var(--bg-surface) !important;
         border: 1px solid var(--border) !important;
-        padding: 10px 14px !important;
+        padding: 8px !important;
         border-radius: var(--radius-sm) !important;
-        margin-bottom: 6px !important;
+        margin: 0 !important;
         font-weight: 600 !important;
-        font-size: 14px !important;
+        font-size: 12.5px !important;
+        line-height: 1.25 !important;
         cursor: pointer !important;
         transition: border-color 0.15s ease, background-color 0.15s ease !important;
+    }
+    div[data-testid="stRadio"] label > div:last-child {
+        white-space: normal !important;
+        overflow-wrap: break-word !important;
     }
     div[data-testid="stRadio"] label:hover {
         border-color: var(--border-strong) !important;
@@ -457,6 +485,32 @@ def get_orders_df():
         ])
 
 
+def check_client_exists(client_name, phone):
+    """Vérifie si ce client (même nom ET même téléphone) a déjà une commande
+    enregistrée, et retourne le nombre de commandes précédentes trouvées."""
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT COUNT(*) FROM orders WHERE phone = ? AND client_name = ?",
+                (phone, client_name)
+            )
+            return cursor.fetchone()[0]
+    except sqlite3.OperationalError:
+        return 0
+
+
+def delete_order(order_id):
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM orders WHERE id = ?", (order_id,))
+            conn.commit()
+        return True, None
+    except sqlite3.OperationalError as e:
+        return False, str(e)
+
+
 def insert_order(values):
     try:
         with get_connection() as conn:
@@ -465,30 +519,6 @@ def insert_order(values):
                 INSERT INTO orders (client_name, phone, address, maps_link, product, quantity, nb_colis, ramassage, type_colis, weight, payment_mode, zone, notes, time_slot, status, created_by, date_created, shop_photo, amount, delivery_fee, livreur, date_updated)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'En attente', ?, ?, ?, ?, ?, ?, ?)
             """, values)
-            conn.commit()
-        return True, None
-    except sqlite3.OperationalError as e:
-        return False, str(e)
-
-
-def update_order_status(order_id, new_status, livreur=None):
-    """Met à jour le statut d'une commande (et le livreur assigné si fourni),
-    en enregistrant la date de mise à jour — utilisé pour calculer les délais
-    moyens et détecter les livraisons terminées récemment."""
-    try:
-        with get_connection() as conn:
-            cursor = conn.cursor()
-            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            if livreur is not None:
-                cursor.execute(
-                    "UPDATE orders SET status = ?, livreur = ?, date_updated = ? WHERE id = ?",
-                    (new_status, livreur, now_str, order_id)
-                )
-            else:
-                cursor.execute(
-                    "UPDATE orders SET status = ?, date_updated = ? WHERE id = ?",
-                    (new_status, now_str, order_id)
-                )
             conn.commit()
         return True, None
     except sqlite3.OperationalError as e:
@@ -574,24 +604,37 @@ def commercial_page(current_menu):
 
     if current_menu == "📦 Ajouter Commande":
         st.subheader("Saisie Complète d'Expédition")
+
+        if "order_form_version" not in st.session_state:
+            st.session_state["order_form_version"] = 0
+
+        if st.session_state.get("order_just_saved"):
+            st.success("✅ Commande et Photo enregistrées !")
+            st.session_state["order_just_saved"] = False
+
         main_col1, main_col2 = st.columns([2, 1])
 
         with main_col1:
-            with st.form("manual_order_form"):
-                st.markdown(
-                    "<div style='display:flex; align-items:center; gap:10px; margin-bottom:14px;'>"
-                    "<span style='display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; "
-                    "border-radius:50%; background:var(--accent-soft); border:1px solid var(--accent-border); color:var(--accent); "
-                    "font-family:var(--font-mono); font-weight:600; font-size:13px;'>1</span>"
-                    "<h4 style='margin:0; color:var(--text-primary);'>👤 Destinataire (Client)</h4></div>",
-                    unsafe_allow_html=True
-                )
-                c_name, c_phone = st.columns(2)
-                with c_name:
-                    client_name = st.text_input("Nom Complet du Client *")
-                with c_phone:
-                    phone = st.text_input("Téléphone du Client *")
+            st.markdown(
+                "<div style='display:flex; align-items:center; gap:10px; margin-bottom:14px;'>"
+                "<span style='display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; "
+                "border-radius:50%; background:var(--accent-soft); border:1px solid var(--accent-border); color:var(--accent); "
+                "font-family:var(--font-mono); font-weight:600; font-size:13px;'>1</span>"
+                "<h4 style='margin:0; color:var(--text-primary);'>👤 Destinataire (Client)</h4></div>",
+                unsafe_allow_html=True
+            )
+            c_name, c_phone = st.columns(2)
+            with c_name:
+                client_name = st.text_input("Nom Complet du Client *", key=f"new_order_client_name_{st.session_state['order_form_version']}")
+            with c_phone:
+                phone = st.text_input("Téléphone du Client *", key=f"new_order_phone_{st.session_state['order_form_version']}")
 
+            if client_name and phone:
+                nb_existantes = check_client_exists(client_name, phone)
+                if nb_existantes > 0:
+                    st.warning(f"⚠️ Ce client existe déjà — {nb_existantes} commande(s) précédente(s) trouvée(s) avec ce nom et ce numéro.")
+
+            with st.form("manual_order_form"):
                 zone = st.selectbox("Zone de livraison *", ["Casablanca - Centre", "Casablanca - Oulfa", "Casablanca - Ain Sebaa", "Rabat", "Marrakech"])
 
                 st.markdown(
@@ -698,21 +741,26 @@ def commercial_page(current_menu):
 
                 if st.form_submit_button("🚀 Valider la Commande"):
                     if client_name and phone:
-                        photo_path = ""
-                        if uploaded_file is not None:
-                            os.makedirs("uploaded_shops", exist_ok=True)
-                            photo_path = f"uploaded_shops/{datetime.now().strftime('%Y%m%d%H%M%S')}_{uploaded_file.name}"
-                            with open(photo_path, "wb") as f:
-                                f.write(uploaded_file.getbuffer())
-
-                        today_str = datetime.now().strftime("%Y-%m-%d")
-                        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                        values = (client_name, phone, address, maps_link, product, quantity, nb_colis, ramassage, type_colis, weight, payment_mode, zone, notes, time_slot, st.session_state["username"], today_str, photo_path, amount, delivery_fee, livreur, now_str)
-                        ok, err = insert_order(values)
-                        if ok:
-                            st.success("Commande et Photo enregistrées !")
+                        if check_client_exists(client_name, phone) > 0:
+                            st.error("❌ Ce client existe déjà (même nom et même numéro de téléphone) — commande non enregistrée pour éviter un doublon.")
                         else:
-                            st.error(f"❌ Erreur lors de l'enregistrement : {err}. Réessayez dans un instant.")
+                            photo_path = ""
+                            if uploaded_file is not None:
+                                os.makedirs("uploaded_shops", exist_ok=True)
+                                photo_path = f"uploaded_shops/{datetime.now().strftime('%Y%m%d%H%M%S')}_{uploaded_file.name}"
+                                with open(photo_path, "wb") as f:
+                                    f.write(uploaded_file.getbuffer())
+
+                            today_str = datetime.now().strftime("%Y-%m-%d")
+                            now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            values = (client_name, phone, address, maps_link, product, quantity, nb_colis, ramassage, type_colis, weight, payment_mode, zone, notes, time_slot, st.session_state["username"], today_str, photo_path, amount, delivery_fee, livreur, now_str)
+                            ok, err = insert_order(values)
+                            if ok:
+                                st.session_state["order_just_saved"] = True
+                                st.session_state["order_form_version"] += 1
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Erreur lors de l'enregistrement : {err}. Réessayez dans un instant.")
                     else:
                         st.error("Veuillez remplir les champs obligatoires (*)")
 
@@ -735,11 +783,30 @@ def commercial_page(current_menu):
         if s_zone != "Tous":
             my_df = my_df[my_df['zone'] == s_zone]
 
-        display_df = my_df[['id', 'client_name', 'phone', 'zone', 'product', 'status', 'date_created']].rename(columns={
-            'id': 'N°', 'client_name': 'Client', 'phone': 'Téléphone', 'zone': 'Zone',
-            'product': 'Produit', 'status': 'Statut', 'date_created': 'Date'
-        }) if not my_df.empty else my_df
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
+        if my_df.empty:
+            st.info("Aucune commande trouvée.")
+        else:
+            # Numérotation propre à chaque commercial : n° 1, 2, 3... parmi
+            # SES propres clients uniquement (pas l'id global partagé entre tous les commerciaux).
+            my_df_sorted = my_df.sort_values('id').reset_index(drop=True)
+            my_df_sorted.insert(0, 'num_client', range(1, len(my_df_sorted) + 1))
+
+            for _, row in my_df_sorted.iterrows():
+                with st.container(border=True):
+                    c1, c2, c3 = st.columns([0.6, 3, 1])
+                    with c1:
+                        st.markdown(f"**N° {row['num_client']}**")
+                    with c2:
+                        st.markdown(f"**{row['client_name']}** — {row['phone']}")
+                        st.caption(f"{row['zone']} • {row['product']} • {row['date_created']}")
+                    with c3:
+                        if st.button("🗑️ Supprimer", key=f"delete_mine_{row['id']}"):
+                            ok, err = delete_order(row['id'])
+                            if ok:
+                                st.success("Commande supprimée.")
+                                st.rerun()
+                            else:
+                                st.error(f"Erreur : {err}")
 
 
 def admin_page(current_menu):
@@ -759,21 +826,17 @@ def admin_page(current_menu):
 
         with st.container():
             st.markdown("##### 🛠️ Zone de Filtrage")
-            col_f1, col_f2, col_f3 = st.columns(3)
+            col_f1, col_f2 = st.columns(2)
             with col_f1:
                 search_client = st.text_input("Nom du Client")
             with col_f2:
                 search_user = st.selectbox("Commercial", ["Tous"] + get_commercial_usernames())
-            with col_f3:
-                search_status = st.selectbox("Statut", ["Tous", "En attente", "En cours", "Livré", "Échec"])
 
         if not df.empty:
             if search_client:
                 df = df[df['client_name'].str.contains(search_client, case=False, na=False)]
             if search_user != "Tous":
                 df = df[df['created_by'] == search_user]
-            if search_status != "Tous":
-                df = df[df['status'] == search_status]
 
             st.markdown("##### 📥 Extraction des Données")
             csv = df.to_csv(index=False).encode('utf-8')
@@ -805,118 +868,44 @@ def admin_page(current_menu):
                         st.markdown(f"⏰ {row['time_slot']}")
                         st.markdown(f"📅 {row['date_created']}")
 
-                    st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-                    c4, c5, c6 = st.columns([2, 2, 1])
-                    with c4:
-                        status_options = ["En attente", "En cours", "Livré", "Échec"]
-                        current_status = row['status'] if row['status'] in status_options else "En attente"
-                        new_status = st.selectbox(
-                            "Statut", status_options,
-                            index=status_options.index(current_status),
-                            key=f"status_{row['id']}", label_visibility="collapsed"
-                        )
-                    with c5:
-                        new_livreur = st.text_input(
-                            "Livreur", value=row['livreur'] if pd.notna(row.get('livreur')) else "",
-                            key=f"livreur_{row['id']}", label_visibility="collapsed",
-                            placeholder="Nom du livreur"
-                        )
-                    with c6:
-                        if st.button("Mettre à jour", key=f"update_{row['id']}"):
-                            ok, err = update_order_status(row['id'], new_status, new_livreur)
-                            if ok:
-                                st.success("Mis à jour !")
-                                st.rerun()
-                            else:
-                                st.error(f"Erreur : {err}")
+                    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+                    if st.button("🗑️ Supprimer ce client", key=f"delete_admin_{row['id']}"):
+                        ok, err = delete_order(row['id'])
+                        if ok:
+                            st.success("Commande supprimée.")
+                            st.rerun()
+                        else:
+                            st.error(f"Erreur : {err}")
         else:
             st.info("Aucune commande dans le système.")
 
     elif current_menu == "🔔 Notifications":
-        st.title("🔔 Notifications & Alertes")
+        st.title("🔔 Notifications")
         if not df.empty:
-            now = datetime.now()
-            df_local = df.copy()
-            df_local['_created_dt'] = pd.to_datetime(df_local['date_created'], errors='coerce')
-            df_local['_updated_dt'] = pd.to_datetime(df_local['date_updated'], errors='coerce')
+            today_str = datetime.now().strftime("%Y-%m-%d")
+            nouvelles = df[df['date_created'] == today_str]
 
-            today_str = now.strftime("%Y-%m-%d")
-            nouvelles = df_local[df_local['date_created'] == today_str]
-            en_cours_mask = df_local['status'].isin(["En attente", "En cours"])
-            retard = df_local[en_cours_mask & (df_local['_created_dt'] < (now - pd.Timedelta(hours=24)))]
-            echecs = df_local[df_local['status'] == "Échec"]
-            livrees_recentes = df_local[
-                (df_local['status'] == "Livré") &
-                (df_local['_updated_dt'].dt.strftime("%Y-%m-%d") == today_str)
-            ]
-
-            n1, n2, n3, n4 = st.columns(4)
-            n1.metric("🆕 Nouvelles commandes (jour)", len(nouvelles))
-            n2.metric("⏳ En retard (+24h)", len(retard))
-            n3.metric("❌ Échecs", len(echecs))
-            n4.metric("✅ Livrées aujourd'hui", len(livrees_recentes))
-
+            st.metric("🆕 Nouvelles commandes aujourd'hui", len(nouvelles))
             st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
 
-            def notif_block(title, sub_df, empty_msg, icon):
-                st.markdown(f"##### {icon} {title}")
-                if sub_df.empty:
-                    st.caption(empty_msg)
-                else:
-                    view = sub_df[['id', 'client_name', 'created_by', 'status', 'date_created']].rename(columns={
-                        'id': 'N°', 'client_name': 'Client', 'created_by': 'Commercial',
-                        'status': 'Statut', 'date_created': 'Date'
-                    })
-                    st.dataframe(view, use_container_width=True, hide_index=True)
-                st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
-
-            notif_block("Nouvelles commandes", nouvelles, "Aucune nouvelle commande aujourd'hui.", "🆕")
-            notif_block("Commandes en retard (plus de 24h sans mise à jour)", retard, "Aucun retard détecté.", "⏳")
-            notif_block("Échecs de livraison", echecs, "Aucun échec signalé.", "❌")
-            notif_block("Livraisons terminées aujourd'hui", livrees_recentes, "Aucune livraison terminée aujourd'hui.", "✅")
+            st.markdown("##### 🆕 Commandes reçues aujourd'hui")
+            if nouvelles.empty:
+                st.caption("Aucune nouvelle commande aujourd'hui.")
+            else:
+                view = nouvelles[['id', 'client_name', 'created_by', 'zone', 'date_created']].rename(columns={
+                    'id': 'N°', 'client_name': 'Client', 'created_by': 'Commercial',
+                    'zone': 'Zone', 'date_created': 'Date'
+                })
+                st.dataframe(view, use_container_width=True, hide_index=True)
         else:
             st.info("Aucune commande dans le système pour générer des notifications.")
 
     elif current_menu == "📊 Statistiques & Performance":
         st.title("📊 Analyses & Statistiques Avancées")
         if not df.empty:
-            # ---- Dashboard amélioré : taux de réussite & délai moyen ----
-            df_perf = df.copy()
-            df_perf['_created_dt'] = pd.to_datetime(df_perf['date_created'], errors='coerce')
-            df_perf['_updated_dt'] = pd.to_datetime(df_perf['date_updated'], errors='coerce')
-
-            total_cmd = len(df_perf)
-            nb_livre = (df_perf['status'] == "Livré").sum()
-            nb_echec = (df_perf['status'] == "Échec").sum()
-            taux_reussite = (nb_livre / total_cmd * 100) if total_cmd else 0
-
-            delivered = df_perf[(df_perf['status'] == "Livré") & df_perf['_updated_dt'].notna() & df_perf['_created_dt'].notna()]
-            if not delivered.empty:
-                delais = (delivered['_updated_dt'] - delivered['_created_dt']).dt.total_seconds() / 3600
-                delai_moyen_h = delais.mean()
-                delai_txt = f"{delai_moyen_h:.1f} h"
-            else:
-                delai_txt = "—"
-
-            m1, m2, m3, m4 = st.columns(4)
-            m1.metric("✅ Taux de réussite", f"{taux_reussite:.0f}%")
-            m2.metric("⏱️ Délai moyen de livraison", delai_txt)
-            m3.metric("📦 Total commandes", total_cmd)
-            m4.metric("❌ Échecs", int(nb_echec))
-
-            st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
-
-            col_s1, col_s2 = st.columns(2)
-
-            with col_s1:
-                st.markdown("##### 👥 Statistiques par Commercial")
-                stats_commercial = df['created_by'].value_counts()
-                st.bar_chart(stats_commercial)
-
-            with col_s2:
-                st.markdown("##### 📅 Nombre de clients / commandes par jour")
-                stats_jours = df['date_created'].value_counts().sort_index()
-                st.line_chart(stats_jours)
+            st.markdown("##### 👥 Statistiques par Commercial")
+            stats_commercial = df['created_by'].value_counts()
+            st.bar_chart(stats_commercial)
 
             st.markdown("---")
             st.markdown("##### 📋 Détail par Commercial (clients apportés)")
@@ -934,15 +923,10 @@ def admin_page(current_menu):
             if not df_livreurs.empty:
                 livreur_table = df_livreurs.groupby('livreur').agg(
                     nb_livraisons=('id', 'count'),
-                    nb_livrees=('status', lambda s: (s == "Livré").sum()),
-                    nb_echecs=('status', lambda s: (s == "Échec").sum()),
-                ).reset_index().rename(columns={'livreur': 'Livreur'})
-                livreur_table['Taux de réussite'] = (
-                    livreur_table['nb_livrees'] / livreur_table['nb_livraisons'] * 100
-                ).round(0).astype(int).astype(str) + " %"
+                ).reset_index().rename(columns={'livreur': 'Livreur', 'nb_livraisons': 'Nombre de livraisons'})
                 st.dataframe(livreur_table, use_container_width=True, hide_index=True)
             else:
-                st.caption("Aucun livreur assigné pour le moment — assignez un livreur depuis « Suivi Global & Recherche ».")
+                st.caption("Aucun livreur assigné pour le moment — renseignez le champ « Livreur assigné » lors de la saisie d'une commande.")
         else:
             st.info("Pas assez de données pour générer des graphiques. Ajoutez des commandes pour voir apparaître les statistiques ici.")
 
@@ -954,13 +938,13 @@ def admin_page(current_menu):
             df_fin['delivery_fee'] = pd.to_numeric(df_fin['delivery_fee'], errors='coerce').fillna(0)
 
             cod_mask = df_fin['payment_mode'] == "COD (Cash on Delivery)"
-            a_encaisser = df_fin[cod_mask & (df_fin['status'] != "Livré")]['amount'].sum()
-            deja_encaisse = df_fin[cod_mask & (df_fin['status'] == "Livré")]['amount'].sum()
+            a_encaisser = df_fin[cod_mask]['amount'].sum()
+            deja_paye = df_fin[~cod_mask]['amount'].sum()
             total_frais = df_fin['delivery_fee'].sum()
 
             f1, f2, f3 = st.columns(3)
             f1.metric("💵 Montant à encaisser (COD)", f"{a_encaisser:,.0f} DH")
-            f2.metric("✅ Déjà encaissé (COD livrées)", f"{deja_encaisse:,.0f} DH")
+            f2.metric("✅ Déjà payé d'avance", f"{deja_paye:,.0f} DH")
             f3.metric("🚚 Total frais de livraison", f"{total_frais:,.0f} DH")
 
             st.markdown("<hr style='border-color:var(--border);'>", unsafe_allow_html=True)
@@ -996,9 +980,9 @@ def admin_page(current_menu):
             st.bar_chart(day_df['created_by'].value_counts())
 
             st.markdown("##### Détail des commandes")
-            report_view = day_df[['id', 'created_by', 'client_name', 'phone', 'zone', 'product', 'status', 'time_slot']].rename(columns={
+            report_view = day_df[['id', 'created_by', 'client_name', 'phone', 'zone', 'product', 'time_slot']].rename(columns={
                 'id': 'N°', 'created_by': 'Commercial', 'client_name': 'Client', 'phone': 'Téléphone',
-                'zone': 'Zone', 'product': 'Produit', 'status': 'Statut', 'time_slot': 'Créneau'
+                'zone': 'Zone', 'product': 'Produit', 'time_slot': 'Créneau'
             })
             st.dataframe(report_view, use_container_width=True, hide_index=True)
 
