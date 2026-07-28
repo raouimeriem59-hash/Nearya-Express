@@ -158,6 +158,9 @@ st.markdown("""
         border-right: 1px solid var(--border) !important;
     }
     [data-testid="stSidebar"] * { color: var(--text-primary) !important; }
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        width: 100% !important;
+    }
 
     /* ---------- Inputs / Selects / Textareas ---------- */
     div[data-baseweb="input"],
@@ -500,6 +503,21 @@ def check_client_exists(client_name, phone):
         return 0
 
 
+def update_order_fields(order_id, client_name, phone, address, product, amount, delivery_fee, notes):
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """UPDATE orders SET client_name = ?, phone = ?, address = ?, product = ?,
+                   amount = ?, delivery_fee = ?, notes = ? WHERE id = ?""",
+                (client_name, phone, address, product, amount, delivery_fee, notes, order_id)
+            )
+            conn.commit()
+        return True, None
+    except sqlite3.OperationalError as e:
+        return False, str(e)
+
+
 def delete_order(order_id):
     try:
         with get_connection() as conn:
@@ -610,6 +628,7 @@ def commercial_page(current_menu):
 
         if st.session_state.get("order_just_saved"):
             st.success("✅ Commande et Photo enregistrées !")
+            st.toast("✅ Commande enregistrée avec succès !", icon="✅")
             st.session_state["order_just_saved"] = False
 
         main_col1, main_col2 = st.columns([2, 1])
@@ -869,13 +888,55 @@ def admin_page(current_menu):
                         st.markdown(f"📅 {row['date_created']}")
 
                     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-                    if st.button("🗑️ Supprimer ce client", key=f"delete_admin_{row['id']}"):
-                        ok, err = delete_order(row['id'])
-                        if ok:
-                            st.success("Commande supprimée.")
+                    edit_key = f"editing_{row['id']}"
+                    if edit_key not in st.session_state:
+                        st.session_state[edit_key] = False
+
+                    bcol1, bcol2 = st.columns(2)
+                    with bcol1:
+                        if st.button("✏️ Modifier", key=f"editbtn_{row['id']}"):
+                            st.session_state[edit_key] = not st.session_state[edit_key]
                             st.rerun()
-                        else:
-                            st.error(f"Erreur : {err}")
+                    with bcol2:
+                        if st.button("🗑️ Supprimer ce client", key=f"delete_admin_{row['id']}"):
+                            ok, err = delete_order(row['id'])
+                            if ok:
+                                st.success("Commande supprimée.")
+                                st.rerun()
+                            else:
+                                st.error(f"Erreur : {err}")
+
+                    if st.session_state[edit_key]:
+                        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+                        with st.form(f"edit_form_{row['id']}"):
+                            e_name = st.text_input("Nom du client", value=row['client_name'])
+                            e_phone = st.text_input("Téléphone", value=row['phone'])
+                            e_address = st.text_input("Adresse", value=row['address'] if pd.notna(row['address']) else "")
+                            e_product = st.text_input("Produit", value=row['product'] if pd.notna(row['product']) else "")
+                            ec1, ec2 = st.columns(2)
+                            with ec1:
+                                e_amount = st.number_input("Montant (DH)", min_value=0.0, value=float(row['amount']) if pd.notna(row.get('amount')) else 0.0, step=10.0)
+                            with ec2:
+                                e_fee = st.number_input("Frais de livraison (DH)", min_value=0.0, value=float(row['delivery_fee']) if pd.notna(row.get('delivery_fee')) else 0.0, step=5.0)
+                            e_notes = st.text_area("Notes", value=row['notes'] if pd.notna(row['notes']) else "")
+
+                            save_col, cancel_col = st.columns(2)
+                            with save_col:
+                                save_clicked = st.form_submit_button("💾 Enregistrer les modifications")
+                            with cancel_col:
+                                cancel_clicked = st.form_submit_button("Annuler")
+
+                            if save_clicked:
+                                ok, err = update_order_fields(row['id'], e_name, e_phone, e_address, e_product, e_amount, e_fee, e_notes)
+                                if ok:
+                                    st.session_state[edit_key] = False
+                                    st.success("Commande mise à jour !")
+                                    st.rerun()
+                                else:
+                                    st.error(f"Erreur : {err}")
+                            if cancel_clicked:
+                                st.session_state[edit_key] = False
+                                st.rerun()
         else:
             st.info("Aucune commande dans le système.")
 
@@ -1030,7 +1091,7 @@ if not st.session_state["logged_in"]:
                 else:
                     st.error("Identifiants incorrects.")
 else:
-    st.sidebar.markdown("<h1 style='text-align: center !important; font-size: 26px !important; font-weight: 700 !important; color: var(--text-primary) !important; margin-bottom: 0 !important; border-bottom: none !important; padding-bottom: 0 !important;'>NearYa</h1>", unsafe_allow_html=True)
+    st.sidebar.markdown("<h1 style='display: block !important; width: 100% !important; text-align: center !important; font-size: 26px !important; font-weight: 700 !important; color: var(--text-primary) !important; margin: 0 auto 0 auto !important; border-bottom: none !important; padding-bottom: 0 !important;'>NearYa</h1>", unsafe_allow_html=True)
     st.sidebar.markdown("<p style='text-align: center; font-size: 11px; color: var(--accent); margin-top: 2px; letter-spacing: 2px; font-weight:700;'>EXPRESS LOGISTICS</p>", unsafe_allow_html=True)
 
     if os.path.exists(LOGO_FILE):
